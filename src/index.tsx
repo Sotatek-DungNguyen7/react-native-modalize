@@ -5,44 +5,44 @@
 import * as React from 'react';
 import {
   Animated,
-  View,
-  Modal,
-  Easing,
-  LayoutChangeEvent,
   BackHandler,
-  KeyboardAvoidingView,
-  Keyboard,
-  ScrollView,
-  FlatList,
-  SectionList,
-  Platform,
-  StatusBar,
-  KeyboardEvent,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-  StyleSheet,
-  KeyboardAvoidingViewProps,
-  ViewStyle,
-  NativeEventSubscription,
+  Easing,
   EmitterSubscription,
+  FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
+  KeyboardAvoidingViewProps,
+  KeyboardEvent,
+  LayoutChangeEvent,
+  Modal,
+  NativeEventSubscription,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Platform,
+  ScrollView,
+  SectionList,
+  StatusBar,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  ViewStyle,
 } from 'react-native';
 import {
-  PanGestureHandler,
   NativeViewGestureHandler,
+  PanGestureHandler,
+  PanGestureHandlerStateChangeEvent,
   State,
   TapGestureHandler,
-  PanGestureHandlerStateChangeEvent,
-  TapGestureHandlerStateChangeEvent,
 } from 'react-native-gesture-handler';
 
-import { IProps, TOpen, TClose, TStyle, IHandles, TPosition } from './options';
-import { useDimensions } from './utils/use-dimensions';
-import { getSpringConfig } from './utils/get-spring-config';
-import { isIphoneX, isIos, isAndroid } from './utils/devices';
-import { isBelowRN65, isRNGH2 } from './utils/libraries';
-import { invariant } from './utils/invariant';
-import { composeRefs } from './utils/compose-refs';
+import { IHandles, IProps, TClose, TOpen, TPosition, TStyle } from './options';
 import s from './styles';
+import { composeRefs } from './utils/compose-refs';
+import { isAndroid, isIos, isIphoneX } from './utils/devices';
+import { getSpringConfig } from './utils/get-spring-config';
+import { invariant } from './utils/invariant';
+import { isBelowRN65, isRNGH2 } from './utils/libraries';
+import { useDimensions } from './utils/use-dimensions';
 
 const AnimatedKeyboardAvoidingView = Animated.createAnimatedComponent(KeyboardAvoidingView);
 /**
@@ -175,7 +175,6 @@ const ModalizeBase = (
   const panGestureChildrenRef = React.useRef<PanGestureHandler>(null);
   const nativeViewChildrenRef = React.useRef<NativeViewGestureHandler>(null);
   const contentViewRef = React.useRef<ScrollView | FlatList<any> | SectionList<any>>(null);
-  const tapGestureOverlayRef = React.useRef<TapGestureHandler>(null);
   const backButtonListenerRef = React.useRef<NativeEventSubscription>(null);
 
   // We diff and get the negative value only. It sometimes go above 0
@@ -615,8 +614,8 @@ const ModalizeBase = (
     handleChildren({ nativeEvent }, 'component');
   };
 
-  const handleOverlay = ({ nativeEvent }: TapGestureHandlerStateChangeEvent): void => {
-    if (nativeEvent.oldState === State.ACTIVE && !willCloseModalize) {
+  const handleOverlay = (): void => {
+    if (!willCloseModalize) {
       if (onOverlayPress) {
         onOverlayPress();
       }
@@ -804,8 +803,9 @@ const ModalizeBase = (
   };
 
   const renderOverlay = (): JSX.Element => {
-    const pointerEvents =
-      alwaysOpen && (modalPosition === 'initial' || !modalPosition) ? 'box-none' : 'auto';
+    // const pointerEvents =
+    //   alwaysOpen && (modalPosition === 'initial' || !modalPosition) ? 'box-none' : 'auto';
+    const pointerEvents = 'auto';
 
     return (
       <PanGestureHandler
@@ -817,10 +817,11 @@ const ModalizeBase = (
       >
         <Animated.View style={s.overlay} pointerEvents={pointerEvents}>
           {showContent && (
-            <TapGestureHandler
-              ref={tapGestureOverlayRef}
-              enabled={closeOnOverlayTap !== undefined ? closeOnOverlayTap : panGestureEnabled}
-              onHandlerStateChange={handleOverlay}
+            <TouchableOpacity
+              style={{ flex: 1 }}
+              activeOpacity={1}
+              disabled={!(closeOnOverlayTap !== undefined ? closeOnOverlayTap : panGestureEnabled)}
+              onPress={handleOverlay}
             >
               <Animated.View
                 style={[
@@ -835,7 +836,7 @@ const ModalizeBase = (
                 ]}
                 pointerEvents={pointerEvents}
               />
-            </TapGestureHandler>
+            </TouchableOpacity>
           )}
         </Animated.View>
       </PanGestureHandler>
@@ -946,17 +947,14 @@ const ModalizeBase = (
   }
 
   const renderModalize = (
-    <View
-      style={[s.modalize, rootStyle]}
-      pointerEvents={alwaysOpen || !withOverlay ? 'box-none' : 'auto'}
-    >
+    <View style={[s.modalize, rootStyle]} pointerEvents={'auto'}>
       <TapGestureHandler
         ref={tapGestureModalizeRef}
         maxDurationMs={tapGestureEnabled ? 100000 : 50}
         maxDeltaY={lastSnap}
         enabled={panGestureEnabled}
       >
-        <View style={s.modalize__wrapper} pointerEvents="box-none">
+        <View style={s.modalize__wrapper}>
           {showContent && (
             <AnimatedKeyboardAvoidingView {...keyboardAvoidingViewProps}>
               {renderHandle()}
